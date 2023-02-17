@@ -252,7 +252,10 @@ cc_library_static {
     srcs: [
         "tzcode/**/*.c",
         "tzcode/bionic.cpp",
-        "upstream-openbsd/lib/libc/time/wcsftime.c", // tzcode doesn't include wcsftime, so we use the OpenBSD one.
+        // tzcode doesn't include strptime or wcsftime, so we use the OpenBSD
+        // code (with some local changes in the strptime case).
+        "upstream-openbsd/lib/libc/locale/_def_time.c",
+        "upstream-openbsd/lib/libc/time/wcsftime.c",
     ],
 
     cflags: [
@@ -772,7 +775,7 @@ cc_library_static {
 }
 
 // ========================================================
-// libc_fortify.a - container for our FORITFY
+// libc_fortify.a - container for our FORTIFY
 // implementation details
 // ========================================================
 cc_library_static {
@@ -1198,6 +1201,7 @@ cc_library_static {
         "bionic/termios.cpp",
         "bionic/thread_private.cpp",
         "bionic/threads.cpp",
+        "bionic/time_l.cpp",
         "bionic/timespec_get.cpp",
         "bionic/tmpfile.cpp",
         "bionic/umount.cpp",
@@ -1440,6 +1444,7 @@ cc_library_static {
 
     whole_static_libs: [
         "gwp_asan",
+        "gwp_asan_crash_handler",
         "libarm-optimized-routines-string",
         "libasync_safe",
         "libc_bionic_ndk",
@@ -1682,6 +1687,7 @@ cc_library {
         cflags: ["-DLIBC_STATIC"],
         whole_static_libs: [
             "gwp_asan",
+            "gwp_asan_crash_handler",
             "libc_init_static",
             "libc_common_static",
             "libc_unwind_static",
@@ -1691,6 +1697,7 @@ cc_library {
         srcs: [ ":libc_sources_shared" ],
         whole_static_libs: [
             "gwp_asan",
+            "gwp_asan_crash_handler",
             "libc_init_dynamic",
             "libc_common_shared",
             "libunwind-exported",
@@ -2272,8 +2279,12 @@ cc_library_static {
 // libc dependencies for baremetal Rust projects.
 // ========================================================
 
-cc_defaults {
-    name: "librust_baremetal_defaults",
+// This library contains the following unresolved symbols:
+//     __errno
+//     abort
+//     async_safe_fatal_va_list
+cc_library_static {
+    name: "librust_baremetal",
     header_libs: ["libc_headers"],
     include_dirs: [
         "bionic/libc/async_safe/include",
@@ -2283,17 +2294,23 @@ cc_defaults {
         "-Wall",
         "-Werror",
     ],
-    system_shared_libs: [],
-    nocrt: true,
-    stl: "none",
-}
-
-cc_library_static {
-    name: "librust_baremetal",
-    defaults: ["librust_baremetal_defaults"],
+    srcs: [
+        "bionic/fortify.cpp",
+        "bionic/strtol.cpp",
+    ],
+    arch: {
+        arm64: {
+            srcs: [
+                "arch-arm64/string/__memcpy_chk.S",
+            ],
+        },
+    },
     whole_static_libs: [
         "libarm-optimized-routines-mem",
     ],
+    system_shared_libs: [],
+    nocrt: true,
+    stl: "none",
     visibility: [
         "//packages/modules/Virtualization/vmbase",
     ],
