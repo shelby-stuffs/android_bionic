@@ -71,15 +71,41 @@ TEST(uchar, sizeof_uchar_t) {
 }
 
 TEST(uchar, start_state) {
+  // C23 does not appear to specify the behavior of the conversion functions if
+  // a state is reused before the character is completed. In the wchar.h section
+  // (7.31.6.3) it says:
+  //
+  //     If an mbstate_t object has been altered by any of the functions
+  //     described in this subclause, and is then used with a different
+  //     multibyte character sequence, or in the other conversion direction, or
+  //     with a different LC_CTYPE category setting than on earlier function
+  //     calls, the behavior is undefined.
+  //
+  // But "described in this subclause" refers to the wchar.h functions, not the
+  // uchar.h ones.
+  //
+  // Since C has no opinion, we need to make a choice. While no caller should
+  // ever do this (what does it mean to begin decoding a UTF-32 character while
+  // still in the middle of a UTF-8 sequence?), considering that a decoding
+  // error seems the least surprising. Bionic and glibc both have that behavior.
+  // musl ignores the state (it also doesn't make much sense to read the state
+  // when the entire conversion completes in a single call) and decodes the
+  // UTF-32 character.
+#if !defined(ANDROID_HOST_MUSL)
+  ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
+
   char out[MB_LEN_MAX];
   mbstate_t ps;
 
-  // Any non-initial state is invalid when calling c32rtomb.
   memset(&ps, 0, sizeof(ps));
   EXPECT_EQ(static_cast<size_t>(-2), mbrtoc32(nullptr, "\xc2", 1, &ps));
   errno = 0;
   EXPECT_EQ(static_cast<size_t>(-1), c32rtomb(out, 0x00a2, &ps));
   EXPECT_EQ(EILSEQ, errno);
+
+  // Similarly (but not in compliance with the standard afaict), musl seems to
+  // ignore the state entirely for the UTF-32 functions rather than reset it.
 
   // If the first argument to c32rtomb is nullptr or the second is L'\0' the shift
   // state should be reset.
@@ -92,14 +118,21 @@ TEST(uchar, start_state) {
   EXPECT_EQ(static_cast<size_t>(-2), mbrtoc32(nullptr, "\xf0\xa4", 1, &ps));
   EXPECT_EQ(1U, c32rtomb(out, L'\0', &ps));
   EXPECT_TRUE(mbsinit(&ps));
+#endif
 }
 
 TEST(uchar, c16rtomb_null_out) {
+  ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
+
   EXPECT_EQ(1U, c16rtomb(nullptr, L'\0', nullptr));
   EXPECT_EQ(1U, c16rtomb(nullptr, L'h', nullptr));
 }
 
 TEST(uchar, c16rtomb_null_char) {
+  ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
+
   char bytes[MB_LEN_MAX];
   EXPECT_EQ(1U, c16rtomb(bytes, L'\0', nullptr));
 }
@@ -140,6 +173,9 @@ TEST(uchar, c16rtomb) {
 }
 
 TEST(uchar, c16rtomb_invalid) {
+  ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
+
   char bytes[MB_LEN_MAX];
 
   memset(bytes, 0, sizeof(bytes));
@@ -150,10 +186,16 @@ TEST(uchar, c16rtomb_invalid) {
 }
 
 TEST(uchar, mbrtoc16_null) {
+  ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
+
   ASSERT_EQ(0U, mbrtoc16(nullptr, nullptr, 0, nullptr));
 }
 
 TEST(uchar, mbrtoc16_zero_len) {
+  ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
+
   char16_t out;
 
   out = L'x';
@@ -238,6 +280,7 @@ TEST(uchar, mbrtoc16_long_sequences) {
 
 TEST(uchar, mbrtoc16_reserved_range) {
   ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
 
   errno = 0;
   char16_t out = u'\0';
@@ -248,6 +291,7 @@ TEST(uchar, mbrtoc16_reserved_range) {
 
 TEST(uchar, mbrtoc16_beyond_range) {
   ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
 
   errno = 0;
   char16_t out = u'\0';
@@ -311,6 +355,9 @@ void test_mbrtoc16_incomplete(mbstate_t* ps) {
 }
 
 TEST(uchar, mbrtoc16_incomplete) {
+  ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
+
   mbstate_t ps;
   memset(&ps, 0, sizeof(ps));
 
@@ -484,6 +531,9 @@ void test_mbrtoc32_incomplete(mbstate_t* ps) {
 }
 
 TEST(uchar, mbrtoc32_incomplete) {
+  ASSERT_STREQ("C.UTF-8", setlocale(LC_CTYPE, "C.UTF-8"));
+  uselocale(LC_GLOBAL_LOCALE);
+
   mbstate_t ps;
   memset(&ps, 0, sizeof(ps));
 
