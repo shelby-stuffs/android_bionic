@@ -83,6 +83,9 @@
 #define F_h	dst
 #define tmp1	x9
 
+/* Fix for b/298790243 - macro L defined both here and in ../../../private/bionic_asm.h */
+#undef L 
+
 #define L(l) .L ## l
 
 /* Copies are split into 3 main cases: small copies of up to 16 bytes,
