@@ -43,6 +43,7 @@ kernel_structs_to_remove = {
     "in_addr": False,
     "ip_mreq_source": False,
     "ip_msfilter": False,
+    "tcphdr": False,
     "timespec": False,
     }
 
@@ -97,6 +98,9 @@ kernel_token_replacements = {
     # Remove unused macros (http://b/262917450).
     "__force": "",
     "__user": "",
+    # Rename the kernel's sigaction so we can expose our POSIX one publicly,
+    # but translate to the kernel's one internally.
+    "sigaction": "__kernel_sigaction",
     }
 
 
