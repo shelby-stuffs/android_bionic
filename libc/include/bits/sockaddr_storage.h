@@ -26,33 +26,32 @@
  * SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
+#pragma once
 
-#if defined(__BIONIC__)
-#include "gtest_globals.h"
-#include "platform/bionic/mte.h"
-#include "utils.h"
-#endif
+/**
+ * @file bits/sockaddr_storage.h
+ * @brief The `sockaddr_storage` struct.
+ */
 
-#include <sys/stat.h>
-#include <unistd.h>
-#include <string>
+#include <sys/cdefs.h>
 
-TEST(MemtagGlobalsTest, test) {
-#if defined(__BIONIC__) && defined(__aarch64__)
-  std::string binary = GetPrebuiltElfDir() + "/memtag_globals_binary.so";
-  chmod(binary.c_str(), 0755);
-  ExecTestHelper eth;
-  eth.SetArgs({binary.c_str(), nullptr});
-  eth.Run(
-      [&]() {
-        execve(binary.c_str(), eth.GetArgs(), eth.GetEnv());
-        GTEST_FAIL() << "Failed to execve: " << strerror(errno) << "\n";
-      },
-      // We catch the global-buffer-overflow and crash only when MTE is
-      // supported.
-      mte_supported() ? -SIGSEGV : 0, "Assertions were passed");
-#else
-  GTEST_SKIP() << "bionic/arm64 only";
-#endif
-}
+#include <bits/sa_family_t.h>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+/**
+ * [sockaddr_storage](https://man7.org/linux/man-pages/man3/sockaddr.3type.html)
+ * is a structure large enough to contain any other `sockaddr_*` type, used to
+ * pass socket addresses without needing to know what kind of socket address
+ * you're passing.
+ */
+struct sockaddr_storage {
+  union {
+    struct {
+      sa_family_t ss_family;
+      char __data[128 - sizeof(sa_family_t)];
+    };
+    void* __align;
+  };
+};
+#pragma clang diagnostic pop
