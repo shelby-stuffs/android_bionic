@@ -47,9 +47,6 @@ cc_library_static {
     sanitize: {
         never: true,
     },
-    apex_available: [
-        "com.android.runtime",
-    ],
 }
 
 cc_library {
