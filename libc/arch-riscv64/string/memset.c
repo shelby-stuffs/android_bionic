@@ -32,12 +32,6 @@
  * SUCH DAMAGE.
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static char sccsid[] = "@(#)memset.c	8.1 (Berkeley) 6/4/93";
-#endif /* LIBC_SCCS and not lint */
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/types.h>
 
 #include <limits.h>
@@ -45,16 +39,6 @@ __FBSDID("$FreeBSD$");
 #define	wsize	sizeof(u_long)
 #define	wmask	(wsize - 1)
 
-#ifdef BZERO
-#include <strings.h>
-
-#define	RETURN	return
-#define	VAL	0
-#define	WIDEVAL	0
-
-void
-bzero(void *dst0, size_t length)
-#else
 #include <string.h>
 
 #define	RETURN	return (dst0)
@@ -62,13 +46,10 @@ bzero(void *dst0, size_t length)
 #define	WIDEVAL	c
 
 void *
-memset(void *dst0, int c0, size_t length)
-#endif
+memset_gc(void *dst0, int c0, size_t length)
 {
 	size_t t;
-#ifndef BZERO
 	u_long c;
-#endif
 	u_char *dst;
 
 	dst = dst0;
@@ -96,17 +77,11 @@ memset(void *dst0, int c0, size_t length)
 		RETURN;
 	}
 
-#ifndef BZERO
 	if ((c = (u_char)c0) != 0) {	/* Fill the word. */
 		c = (c << 8) | c;	/* u_long is 16 bits. */
-#if ULONG_MAX > 0xffff
 		c = (c << 16) | c;	/* u_long is 32 bits. */
-#endif
-#if ULONG_MAX > 0xffffffff
 		c = (c << 32) | c;	/* u_long is 64 bits. */
-#endif
 	}
-#endif
 	/* Align destination by filling in bytes. */
 	if ((t = (long)dst & wmask) != 0) {
 		t = wsize - t;

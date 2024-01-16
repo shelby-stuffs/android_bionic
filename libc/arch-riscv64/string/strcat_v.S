@@ -53,37 +53,55 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(__riscv_v)
-
 #include <private/bionic_asm.h>
 
 #define pDst a0
-#define iValue a1
-#define iNum a2
+#define pSrc a1
+#define pDstPtr a2
 
 #define iVL a3
-#define iTemp a4
-#define pDstPtr a5
+#define iCurrentVL a4
+#define iActiveElemPos a5
 
-#define ELEM_LMUL_SETTING m8
-#define vData v0
+#define ELEM_LMUL_SETTING m1
+#define vMask1 v0
+#define vMask2 v1
+#define vStr1 v8
+#define vStr2 v16
 
-ENTRY(memset_vext)
+ENTRY(strcat_v)
 
     mv pDstPtr, pDst
 
-    vsetvli iVL, iNum, e8, ELEM_LMUL_SETTING, ta, ma
-    vmv.v.x vData, iValue
+    // the strlen of dst
+L(strlen_loop):
+    vsetvli iVL, zero, e8, ELEM_LMUL_SETTING, ta, ma
 
-L(loop):
-    vse8.v vData, (pDstPtr)
-    sub iNum, iNum, iVL
-    add pDstPtr, pDstPtr, iVL
-    vsetvli iVL, iNum, e8, ELEM_LMUL_SETTING, ta, ma
-    bnez iNum, L(loop)
+    vle8ff.v vStr1, (pDstPtr)
+    // find the '\0'
+    vmseq.vx vMask1, vStr1, zero
+    csrr iCurrentVL, vl
+    vfirst.m iActiveElemPos, vMask1
+    add pDstPtr, pDstPtr, iCurrentVL
+    bltz iActiveElemPos, L(strlen_loop)
+
+    sub pDstPtr, pDstPtr, iCurrentVL
+    add pDstPtr, pDstPtr, iActiveElemPos
+
+    // copy pSrc to pDstPtr
+L(strcpy_loop):
+    vsetvli iVL, zero, e8, ELEM_LMUL_SETTING, ta, ma
+
+    vle8ff.v vStr1, (pSrc)
+    vmseq.vx vMask2, vStr1, zero
+    csrr iCurrentVL, vl
+    vfirst.m iActiveElemPos, vMask2
+    vmsif.m vMask1, vMask2
+    add pSrc, pSrc, iCurrentVL
+    vse8.v vStr1, (pDstPtr), vMask1.t
+    add pDstPtr, pDstPtr, iCurrentVL
+    bltz iActiveElemPos, L(strcpy_loop)
 
     ret
 
-END(memset_vext)
-
-#endif
+END(strcat_v)

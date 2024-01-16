@@ -1,8 +1,11 @@
-/*	$OpenBSD: strcpy.c,v 1.10 2017/11/28 06:55:49 tb Exp $	*/
-
-/*
- * Copyright (c) 1988 Regents of the University of California.
- * All rights reserved.
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1990, 1993
+ *	The Regents of the University of California.  All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Chris Torek.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,16 +34,19 @@
 
 #include <string.h>
 
-#if defined(APIWARN)
-__warn_references(strcpy,
-    "strcpy() is almost always misused, please use strlcpy()");
-#endif
-
-char *
-strcpy(char *to, const char *from)
+/*
+ * Compare memory regions.
+ */
+int
+memcmp_gc(const void *s1, const void *s2, size_t n)
 {
-	char *save = to;
+	if (n != 0) {
+		const unsigned char *p1 = s1, *p2 = s2;
 
-	for (; (*to = *from) != '\0'; ++from, ++to);
-	return(save);
+		do {
+			if (*p1++ != *p2++)
+				return (*--p1 - *--p2);
+		} while (--n != 0);
+	}
+	return (0);
 }

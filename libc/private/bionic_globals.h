@@ -49,6 +49,7 @@ struct libc_globals {
   long setjmp_cookie;
   uintptr_t heap_pointer_tag;
   _Atomic(bool) memtag_stack;
+  _Atomic(bool) decay_time_enabled;
 
   // In order to allow a complete switch between dispatch tables without
   // the need for copying each function by function in the structure,
@@ -129,6 +130,7 @@ struct libc_shared_globals {
   const char* scudo_region_info = nullptr;
   const char* scudo_ring_buffer = nullptr;
   size_t scudo_ring_buffer_size = 0;
+  size_t scudo_stack_depot_size = 0;
 
   HeapTaggingLevel initial_heap_tagging_level = M_HEAP_TAGGING_LEVEL_NONE;
   bool initial_memtag_stack = false;

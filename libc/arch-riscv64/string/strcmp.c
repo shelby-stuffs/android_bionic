@@ -1,8 +1,11 @@
-/*	$OpenBSD: strlen.c,v 1.9 2015/08/31 02:53:57 guenther Exp $	*/
+/*	$OpenBSD: strcmp.c,v 1.9 2015/08/31 02:53:57 guenther Exp $	*/
 
 /*-
- * Copyright (c) 1990, 1993
- *	The Regents of the University of California.  All rights reserved.
+ * Copyright (c) 1990 The Regents of the University of California.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Chris Torek.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,14 +34,14 @@
 
 #include <string.h>
 
-size_t
-strlen(const char *str)
+/*
+ * Compare strings.
+ */
+int
+strcmp_gc(const char *s1, const char *s2)
 {
-	const char *s;
-
-	for (s = str; *s; ++s)
-		;
-	return (s - str);
+	while (*s1 == *s2++)
+		if (*s1++ == 0)
+			return (0);
+	return (*(unsigned char *)s1 - *(unsigned char *)--s2);
 }
-
-DEF_STRONG(strlen);

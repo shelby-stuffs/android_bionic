@@ -32,12 +32,6 @@
  * SUCH DAMAGE.
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static char sccsid[] = "@(#)bcopy.c	8.1 (Berkeley) 6/4/93";
-#endif /* LIBC_SCCS and not lint */
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/types.h>
 
 typedef	intptr_t word;		/* "word" used for optimal copy speed */
@@ -47,25 +41,16 @@ typedef	intptr_t word;		/* "word" used for optimal copy speed */
 
 /*
  * Copy a block of memory, handling overlap.
- * This is the routine that actually implements
- * (the portable versions of) bcopy, memcpy, and memmove.
  */
-#if defined(MEMCOPY) || defined(MEMMOVE)
 #include <string.h>
 
 void *
 #ifdef MEMCOPY
-memcpy
+memcpy_gc
 #else
-memmove
+memmove_gc
 #endif
 (void *dst0, const void *src0, size_t length)
-#else
-#include <strings.h>
-
-void
-bcopy(const void *src0, void *dst0, size_t length)
-#endif
 {
 	char *dst = dst0;
 	const char *src = src0;

@@ -1,11 +1,8 @@
-/*	$OpenBSD: strcmp.c,v 1.9 2015/08/31 02:53:57 guenther Exp $	*/
+/*	$OpenBSD: strcpy.c,v 1.10 2017/11/28 06:55:49 tb Exp $	*/
 
-/*-
- * Copyright (c) 1990 The Regents of the University of California.
+/*
+ * Copyright (c) 1988 Regents of the University of California.
  * All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Chris Torek.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,15 +31,11 @@
 
 #include <string.h>
 
-/*
- * Compare strings.
- */
-int
-strcmp(const char *s1, const char *s2)
+char *
+strcpy_gc(char *to, const char *from)
 {
-	while (*s1 == *s2++)
-		if (*s1++ == 0)
-			return (0);
-	return (*(unsigned char *)s1 - *(unsigned char *)--s2);
+	char *save = to;
+
+	for (; (*to = *from) != '\0'; ++from, ++to);
+	return(save);
 }
-DEF_STRONG(strcmp);

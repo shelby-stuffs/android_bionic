@@ -67,9 +67,6 @@ libc_common_flags = [
     // __dso_handle needs to have default visibility on ARM32. See b/73485611.
     "-Wexit-time-destructors",
 
-    // GWP-ASan requires platform TLS.
-    "-fno-emulated-tls",
-
     // We know clang does a lot of harm by rewriting what we've said, and sadly
     // never see any good it does, so let's just ask it to do what we say...
     // (The specific motivating example was clang turning a loop that would only
@@ -136,6 +133,8 @@ cc_defaults {
     },
 
     apex_available: ["com.android.runtime"],
+
+    tidy_disabled_srcs: ["upstream-*/**/*.c"],
 }
 
 libc_scudo_product_variables = {
@@ -251,7 +250,6 @@ cc_library_static {
 cc_library_static {
 
     defaults: ["libc_defaults"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         "tzcode/**/*.c",
         "tzcode/bionic.cpp",
@@ -302,7 +300,6 @@ cc_library_static {
 cc_library_static {
 
     defaults: ["libc_defaults"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         "dns/**/*.c*",
 
@@ -345,7 +342,6 @@ cc_library_static {
 
 cc_library_static {
     defaults: ["libc_defaults"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         "upstream-freebsd/lib/libc/stdlib/getopt_long.c",
         "upstream-freebsd/lib/libc/stdlib/hcreate.c",
@@ -411,7 +407,6 @@ cc_library_static {
 
 cc_library_static {
     defaults: ["libc_defaults"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         "upstream-freebsd/lib/libc/gen/glob.c",
     ],
@@ -439,7 +434,6 @@ cc_library_static {
 cc_library_static {
 
     defaults: ["libc_defaults"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         "upstream-netbsd/common/lib/libc/stdlib/random.c",
         "upstream-netbsd/lib/libc/gen/nice.c",
@@ -497,7 +491,6 @@ cc_library_static {
 cc_library_static {
     name: "libc_openbsd_ndk",
     defaults: ["libc_defaults"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         "upstream-openbsd/lib/libc/gen/alarm.c",
         "upstream-openbsd/lib/libc/gen/ctype_.c",
@@ -616,7 +609,6 @@ cc_library_static {
 cc_library_static {
     name: "libc_openbsd_large_stack",
     defaults: ["libc_defaults"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         "stdio/vfprintf.cpp",
         "stdio/vfwprintf.cpp",
@@ -646,78 +638,57 @@ cc_library_static {
 // automatically included.
 cc_library_static {
     defaults: ["libc_defaults"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         // These two depend on getentropy, which isn't in libc_ndk.a.
         "upstream-openbsd/lib/libc/crypt/arc4random.c",
         "upstream-openbsd/lib/libc/crypt/arc4random_uniform.c",
-
-        // May be overriden by per-arch optimized versions
-        "upstream-openbsd/lib/libc/string/memchr.c",
-        "upstream-openbsd/lib/libc/string/memrchr.c",
-        "upstream-openbsd/lib/libc/string/stpcpy.c",
-        "upstream-openbsd/lib/libc/string/stpncpy.c",
-        "upstream-openbsd/lib/libc/string/strcat.c",
-        "upstream-openbsd/lib/libc/string/strcpy.c",
-        "upstream-openbsd/lib/libc/string/strlcat.c",
-        "upstream-openbsd/lib/libc/string/strlcpy.c",
-        "upstream-openbsd/lib/libc/string/strncat.c",
-        "upstream-openbsd/lib/libc/string/strncmp.c",
-        "upstream-openbsd/lib/libc/string/strncpy.c",
     ],
 
+    // Each architecture has optimized versions of some routines,
+    // and only includes the portable C versions of ones it's missing.
     arch: {
         arm: {
-            exclude_srcs: [
-                "upstream-openbsd/lib/libc/string/strcpy.c",
-                "upstream-openbsd/lib/libc/string/stpcpy.c",
-                "upstream-openbsd/lib/libc/string/strcat.c",
+            srcs: [
+                "upstream-openbsd/lib/libc/string/memchr.c",
+                "upstream-openbsd/lib/libc/string/memrchr.c",
+                "upstream-openbsd/lib/libc/string/stpncpy.c",
+                "upstream-openbsd/lib/libc/string/strlcat.c",
+                "upstream-openbsd/lib/libc/string/strlcpy.c",
+                "upstream-openbsd/lib/libc/string/strncat.c",
+                "upstream-openbsd/lib/libc/string/strncmp.c",
+                "upstream-openbsd/lib/libc/string/strncpy.c",
             ],
         },
         arm64: {
-            exclude_srcs: [
-                "upstream-openbsd/lib/libc/string/memchr.c",
+            srcs: [
                 "upstream-openbsd/lib/libc/string/memrchr.c",
-                "upstream-openbsd/lib/libc/string/stpcpy.c",
-                "upstream-openbsd/lib/libc/string/strcpy.c",
-                "upstream-openbsd/lib/libc/string/strncmp.c",
+                "upstream-openbsd/lib/libc/string/strcat.c",
+                "upstream-openbsd/lib/libc/string/stpncpy.c",
+                "upstream-openbsd/lib/libc/string/strlcat.c",
+                "upstream-openbsd/lib/libc/string/strlcpy.c",
+                "upstream-openbsd/lib/libc/string/strncat.c",
+                "upstream-openbsd/lib/libc/string/strncpy.c",
             ],
         },
         riscv64: {
             srcs: [
-                "upstream-freebsd/lib/libc/string/memcmp.c",
-                "upstream-freebsd/lib/libc/string/memcpy.c",
-                "upstream-freebsd/lib/libc/string/memmove.c",
-                "upstream-freebsd/lib/libc/string/memset.c",
-                "upstream-openbsd/lib/libc/string/strcmp.c",
-                "upstream-openbsd/lib/libc/string/strlen.c",
+                "upstream-openbsd/lib/libc/string/memrchr.c",
+                "upstream-openbsd/lib/libc/string/stpncpy.c",
+                "upstream-openbsd/lib/libc/string/strlcat.c",
+                "upstream-openbsd/lib/libc/string/strlcpy.c",
             ],
         },
         x86: {
-            exclude_srcs: [
-                "upstream-openbsd/lib/libc/string/memchr.c",
-                "upstream-openbsd/lib/libc/string/memrchr.c",
-                "upstream-openbsd/lib/libc/string/stpcpy.c",
-                "upstream-openbsd/lib/libc/string/stpncpy.c",
-                "upstream-openbsd/lib/libc/string/strcat.c",
-                "upstream-openbsd/lib/libc/string/strcpy.c",
-                "upstream-openbsd/lib/libc/string/strncmp.c",
-                "upstream-openbsd/lib/libc/string/strncpy.c",
-                "upstream-openbsd/lib/libc/string/strlcat.c",
-                "upstream-openbsd/lib/libc/string/strlcpy.c",
-                "upstream-openbsd/lib/libc/string/strncat.c",
+            srcs: [
+                // x86 has custom implementations of all of these.
             ],
         },
-
         x86_64: {
-            exclude_srcs: [
-                "upstream-openbsd/lib/libc/string/stpcpy.c",
-                "upstream-openbsd/lib/libc/string/stpncpy.c",
-                "upstream-openbsd/lib/libc/string/strcat.c",
-                "upstream-openbsd/lib/libc/string/strcpy.c",
-                "upstream-openbsd/lib/libc/string/strncat.c",
-                "upstream-openbsd/lib/libc/string/strncmp.c",
-                "upstream-openbsd/lib/libc/string/strncpy.c",
+            srcs: [
+                "upstream-openbsd/lib/libc/string/memchr.c",
+                "upstream-openbsd/lib/libc/string/memrchr.c",
+                "upstream-openbsd/lib/libc/string/strlcat.c",
+                "upstream-openbsd/lib/libc/string/strlcpy.c",
             ],
         },
     },
@@ -745,7 +716,6 @@ cc_library_static {
 
 cc_library_static {
     defaults: ["libc_defaults"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         "upstream-openbsd/android/gdtoa_support.cpp",
         "upstream-openbsd/lib/libc/gdtoa/dmisc.c",
@@ -869,26 +839,12 @@ cc_library_static {
         // The following must not be statically linked into libc_ndk.a, because
         // debuggerd will look for the abort message in libc.so's copy.
         "bionic/android_set_abort_message.cpp",
-
-        "bionic/strchr.cpp",
-        "bionic/strchrnul.cpp",
-        "bionic/strnlen.c",
-        "bionic/strrchr.cpp",
     ],
 
     arch: {
         arm: {
             asflags: libc_common_flags + ["-mno-restrict-it"],
             srcs: [
-                "arch-arm/generic/bionic/memcmp.S",
-                "arch-arm/generic/bionic/memmove.S",
-                "arch-arm/generic/bionic/memset.S",
-                "arch-arm/generic/bionic/stpcpy.c",
-                "arch-arm/generic/bionic/strcat.c",
-                "arch-arm/generic/bionic/strcmp.S",
-                "arch-arm/generic/bionic/strcpy.S",
-                "arch-arm/generic/bionic/strlen.c",
-
                 "arch-arm/bionic/__aeabi_read_tp.S",
                 "arch-arm/bionic/__bionic_clone.S",
                 "arch-arm/bionic/__restore.S",
@@ -901,15 +857,6 @@ cc_library_static {
                 "arch-arm/bionic/syscall.S",
                 "arch-arm/bionic/vfork.S",
 
-                "arch-arm/cortex-a15/bionic/memcpy.S",
-                "arch-arm/cortex-a15/bionic/memmove.S",
-                "arch-arm/cortex-a15/bionic/memset.S",
-                "arch-arm/cortex-a15/bionic/stpcpy.S",
-                "arch-arm/cortex-a15/bionic/strcat.S",
-                "arch-arm/cortex-a15/bionic/strcmp.S",
-                "arch-arm/cortex-a15/bionic/strcpy.S",
-                "arch-arm/cortex-a15/bionic/strlen.S",
-
                 "arch-arm/cortex-a7/bionic/memcpy.S",
                 "arch-arm/cortex-a7/bionic/memset.S",
 
@@ -920,14 +867,37 @@ cc_library_static {
                 "arch-arm/cortex-a9/bionic/strcpy.S",
                 "arch-arm/cortex-a9/bionic/strlen.S",
 
-                "arch-arm/krait/bionic/memcpy.S",
-                "arch-arm/krait/bionic/memset.S",
+                "arch-arm/cortex-a15/bionic/memcpy.S",
+                "arch-arm/cortex-a15/bionic/memmove.S",
+                "arch-arm/cortex-a15/bionic/memset.S",
+                "arch-arm/cortex-a15/bionic/stpcpy.S",
+                "arch-arm/cortex-a15/bionic/strcat.S",
+                "arch-arm/cortex-a15/bionic/strcmp.S",
+                "arch-arm/cortex-a15/bionic/strcpy.S",
+                "arch-arm/cortex-a15/bionic/strlen.S",
 
                 "arch-arm/cortex-a53/bionic/memcpy.S",
 
                 "arch-arm/cortex-a55/bionic/memcpy.S",
 
+                "arch-arm/generic/bionic/memcmp.S",
+                "arch-arm/generic/bionic/memmove.S",
+                "arch-arm/generic/bionic/memset.S",
+                "arch-arm/generic/bionic/stpcpy.c",
+                "arch-arm/generic/bionic/strcat.c",
+                "arch-arm/generic/bionic/strcmp.S",
+                "arch-arm/generic/bionic/strcpy.S",
+                "arch-arm/generic/bionic/strlen.c",
+
+                "arch-arm/krait/bionic/memcpy.S",
+                "arch-arm/krait/bionic/memset.S",
+
                 "arch-arm/kryo/bionic/memcpy.S",
+
+                "bionic/strchr.cpp",
+                "bionic/strchrnul.cpp",
+                "bionic/strnlen.cpp",
+                "bionic/strrchr.cpp",
             ],
         },
         arm64: {
@@ -948,19 +918,6 @@ cc_library_static {
                 "bionic/strnlen.c",
                 "bionic/strrchr.cpp",
             ],
-            kryo: {
-                srcs: [
-                    "arch-arm64/kryo/bionic/__memcpy.S",
-                    "arch-arm64/kryo/bionic/memcpy.S",
-                    "arch-arm64/kryo/bionic/memmove.S",
-                    "arch-arm64/kryo/bionic/wmemmove.S",
-                ],
-                exclude_srcs: [
-                    "arch-arm64/generic/bionic/memcpy.S",
-                    "arch-arm64/generic/bionic/memmove.S",
-                    "arch-arm64/generic/bionic/wmemmove.S",
-                ],
-            },
         },
 
         riscv64: {
@@ -971,26 +928,54 @@ cc_library_static {
                 "arch-riscv64/bionic/syscall.S",
                 "arch-riscv64/bionic/vfork.S",
 
-                "arch-riscv64/string/memchr_vext.S",
-                "arch-riscv64/string/memcmp_vext.S",
-                "arch-riscv64/string/memcpy_vext.S",
-                "arch-riscv64/string/memmove_vext.S",
-                "arch-riscv64/string/memset_vext.S",
-                "arch-riscv64/string/stpcpy_vext.S",
-                "arch-riscv64/string/strcat_vext.S",
-                "arch-riscv64/string/strchr_vext.S",
-                "arch-riscv64/string/strcmp_vext.S",
-                "arch-riscv64/string/strcpy_vext.S",
-                "arch-riscv64/string/strlen_vext.S",
-                "arch-riscv64/string/strncat_vext.S",
-                "arch-riscv64/string/strncmp_vext.S",
-                "arch-riscv64/string/strncpy_vext.S",
-                "arch-riscv64/string/strnlen_vext.S",
+                "arch-riscv64/string/memchr_v.S",
+                "arch-riscv64/string/memcmp_v.S",
+                "arch-riscv64/string/memcpy_v.S",
+                "arch-riscv64/string/memmove_v.S",
+                "arch-riscv64/string/memset_v.S",
+                "arch-riscv64/string/stpcpy_v.S",
+                "arch-riscv64/string/strcat_v.S",
+                "arch-riscv64/string/strchr_v.S",
+                "arch-riscv64/string/strcmp_v.S",
+                "arch-riscv64/string/strcpy_v.S",
+                "arch-riscv64/string/strlen_v.S",
+                "arch-riscv64/string/strncat_v.S",
+                "arch-riscv64/string/strncmp_v.S",
+                "arch-riscv64/string/strncpy_v.S",
+                "arch-riscv64/string/strnlen_v.S",
+
+                "arch-riscv64/string/memchr.c",
+                "arch-riscv64/string/memcmp.c",
+                "arch-riscv64/string/memcpy.c",
+                "arch-riscv64/string/memmove.c",
+                "arch-riscv64/string/memset.c",
+                "arch-riscv64/string/stpcpy.c",
+                "arch-riscv64/string/strcat.c",
+                "arch-riscv64/string/strchr.c",
+                "arch-riscv64/string/strcmp.c",
+                "arch-riscv64/string/strcpy.c",
+                "arch-riscv64/string/strlen.c",
+                "arch-riscv64/string/strncat.c",
+                "arch-riscv64/string/strncmp.c",
+                "arch-riscv64/string/strncpy.c",
+                "arch-riscv64/string/strnlen.c",
+
+                "bionic/strchrnul.cpp",
+                "bionic/strrchr.cpp",
             ],
         },
 
         x86: {
             srcs: [
+                "arch-x86/bionic/__bionic_clone.S",
+                "arch-x86/bionic/_exit_with_stack_teardown.S",
+                "arch-x86/bionic/libcrt_compat.c",
+                "arch-x86/bionic/__restore.S",
+                "arch-x86/bionic/setjmp.S",
+                "arch-x86/bionic/syscall.S",
+                "arch-x86/bionic/vfork.S",
+                "arch-x86/bionic/__x86.get_pc_thunk.S",
+
                 "arch-x86/generic/string/memcmp.S",
                 "arch-x86/generic/string/strcmp.S",
                 "arch-x86/generic/string/strncmp.S",
@@ -1039,24 +1024,18 @@ cc_library_static {
                 "arch-x86/string/sse4-memcmp-slm.S",
                 "arch-x86/string/sse4-wmemcmp-slm.S",
 
-                "arch-x86/bionic/__bionic_clone.S",
-                "arch-x86/bionic/_exit_with_stack_teardown.S",
-                "arch-x86/bionic/libcrt_compat.c",
-                "arch-x86/bionic/__restore.S",
-                "arch-x86/bionic/setjmp.S",
-                "arch-x86/bionic/syscall.S",
-                "arch-x86/bionic/vfork.S",
-                "arch-x86/bionic/__x86.get_pc_thunk.S",
-            ],
-
-            exclude_srcs: [
-                "bionic/strchr.cpp",
-                "bionic/strnlen.c",
-                "bionic/strrchr.cpp",
+                "bionic/strchrnul.cpp",
             ],
         },
         x86_64: {
             srcs: [
+                "arch-x86_64/bionic/__bionic_clone.S",
+                "arch-x86_64/bionic/_exit_with_stack_teardown.S",
+                "arch-x86_64/bionic/__restore_rt.S",
+                "arch-x86_64/bionic/setjmp.S",
+                "arch-x86_64/bionic/syscall.S",
+                "arch-x86_64/bionic/vfork.S",
+
                 "arch-x86_64/string/avx2-memset-kbl.S",
                 "arch-x86_64/string/sse2-memmove-slm.S",
                 "arch-x86_64/string/sse2-memset-slm.S",
@@ -1071,12 +1050,10 @@ cc_library_static {
                 "arch-x86_64/string/ssse3-strcmp-slm.S",
                 "arch-x86_64/string/ssse3-strncmp-slm.S",
 
-                "arch-x86_64/bionic/__bionic_clone.S",
-                "arch-x86_64/bionic/_exit_with_stack_teardown.S",
-                "arch-x86_64/bionic/__restore_rt.S",
-                "arch-x86_64/bionic/setjmp.S",
-                "arch-x86_64/bionic/syscall.S",
-                "arch-x86_64/bionic/vfork.S",
+                "bionic/strchr.cpp",
+                "bionic/strchrnul.cpp",
+                "bionic/strnlen.cpp",
+                "bionic/strrchr.cpp",
             ],
         },
     },
@@ -1090,8 +1067,8 @@ genrule {
     name: "generated_android_ids",
     out: ["generated_android_ids.h"],
     srcs: [":android_filesystem_config_header"],
-    tool_files: ["fs_config_generator.py"],
-    cmd: "$(location fs_config_generator.py) aidarray $(in) > $(out)",
+    tools: ["fs_config_generator"],
+    cmd: "$(location fs_config_generator) aidarray $(in) > $(out)",
 }
 
 // ========================================================
@@ -1796,7 +1773,12 @@ cc_defaults {
         arm: {
             // TODO: This is to work around b/24465209. Remove after root cause is fixed.
             pack_relocations: false,
-            ldflags: ["-Wl,--hash-style=both"],
+            ldflags: [
+                "-Wl,--hash-style=both",
+                // Since we are preserving the debug_frame, do not compress
+                // in this case to make unwinds as fast as possible.
+                "-Wl,--compress-debug-sections=none",
+            ],
 
             version_script: ":libc.arm.map",
             no_libcrt: true,
@@ -2952,7 +2934,6 @@ cc_library {
 
 cc_library_host_static {
     name: "libfts",
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: [
         "bionic/fts.c",
         "upstream-openbsd/lib/libc/stdlib/recallocarray.c",
@@ -2995,7 +2976,6 @@ cc_library_host_static {
 cc_library_host_static {
     name: "libb64",
     visibility: ["//external/musl"],
-    tidy_disabled_srcs: ["upstream-*/**/*.c"],
     srcs: ["upstream-openbsd/lib/libc/net/base64.c"],
     export_include_dirs: ["b64/include"],
     local_include_dirs: [
