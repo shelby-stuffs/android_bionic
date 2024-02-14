@@ -15,6 +15,7 @@
 //
 
 package {
+    default_team: "trendy_team_native_tools_libraries",
     default_applicable_licenses: ["bionic_tests_license"],
 }
 
@@ -61,9 +62,6 @@ cc_defaults {
 
         // This warning does not provide any benefit to the tests.
         "-Wno-reorder-init-list",
-
-        // For glibc.
-        "-D__STDC_LIMIT_MACROS",
     ],
     header_libs: [
         "libcutils_headers",
