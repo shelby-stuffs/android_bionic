@@ -20,31 +20,6 @@ license {
     ],
 }
 
-libc_common_src_files = [
-    "bionic/ether_aton.c",
-    "bionic/ether_ntoa.c",
-    "bionic/exit.cpp",
-    "bionic/initgroups.c",
-    "bionic/isatty.c",
-    "bionic/sched_cpualloc.c",
-    "bionic/sched_cpucount.c",
-    "bionic/sysprop_helpers.cpp",
-    "stdio/fmemopen.cpp",
-    "stdio/parsefloat.c",
-    "stdio/refill.c",
-    "stdio/stdio.cpp",
-    "stdio/stdio_ext.cpp",
-    "stdio/vfscanf.cpp",
-    "stdio/vfwscanf.cpp",
-]
-
-// off64_t/time64_t support on LP32.
-// ========================================================
-libc_common_src_files_32 = [
-    "bionic/legacy_32_bit_support.cpp",
-    "bionic/time64.c",
-]
-
 libc_common_flags = [
     "-D_LIBC=1",
     "-D__BIONIC_LP32_USE_STAT64",
@@ -491,18 +466,16 @@ cc_library_static {
 }
 
 // ========================================================
-// libc_openbsd_ndk.a - upstream OpenBSD C library code
-// that can be safely included in the libc_ndk.a (doesn't
-// contain any troublesome global data or constructors).
+// libc_openbsd.a - upstream OpenBSD C library code
 // ========================================================
 //
 // These files are built with the openbsd-compat.h header file
 // automatically included.
-
 cc_library_static {
-    name: "libc_openbsd_ndk",
     defaults: ["libc_defaults"],
     srcs: [
+        "upstream-openbsd/lib/libc/crypt/arc4random.c",
+        "upstream-openbsd/lib/libc/crypt/arc4random_uniform.c",
         "upstream-openbsd/lib/libc/gen/alarm.c",
         "upstream-openbsd/lib/libc/gen/ctype_.c",
         "upstream-openbsd/lib/libc/gen/daemon.c",
@@ -599,60 +572,8 @@ cc_library_static {
 
         // This file is originally from OpenBSD, and benefits from
         // being compiled with openbsd-compat.h.
+        // TODO: clean this up instead.
         "bionic/fts.c",
-    ],
-
-    cflags: [
-        "-Wno-sign-compare",
-        "-Wno-unused-parameter",
-        "-include openbsd-compat.h",
-    ],
-
-    local_include_dirs: [
-        "private",
-        "stdio",
-        "upstream-openbsd/android/include",
-        "upstream-openbsd/lib/libc/include",
-        "upstream-openbsd/lib/libc/gdtoa/",
-    ],
-}
-
-cc_library_static {
-    name: "libc_openbsd_large_stack",
-    defaults: ["libc_defaults"],
-    srcs: [
-        "stdio/vfprintf.cpp",
-        "stdio/vfwprintf.cpp",
-        "upstream-openbsd/lib/libc/string/memmem.c",
-        "upstream-openbsd/lib/libc/string/strstr.c",
-    ],
-    cflags: [
-        "-include openbsd-compat.h",
-        "-Wno-sign-compare",
-        "-Wframe-larger-than=5000",
-    ],
-
-    local_include_dirs: [
-        "private",
-        "upstream-openbsd/android/include/",
-        "upstream-openbsd/lib/libc/include/",
-        "upstream-openbsd/lib/libc/gdtoa/",
-        "upstream-openbsd/lib/libc/stdio/",
-    ],
-}
-
-// ========================================================
-// libc_openbsd.a - upstream OpenBSD C library code
-// ========================================================
-//
-// These files are built with the openbsd-compat.h header file
-// automatically included.
-cc_library_static {
-    defaults: ["libc_defaults"],
-    srcs: [
-        // These two depend on getentropy, which isn't in libc_ndk.a.
-        "upstream-openbsd/lib/libc/crypt/arc4random.c",
-        "upstream-openbsd/lib/libc/crypt/arc4random_uniform.c",
     ],
 
     // Each architecture has optimized versions of some routines,
@@ -712,9 +633,35 @@ cc_library_static {
     local_include_dirs: [
         "private",
         "upstream-openbsd/android/include",
+        "stdio",
+        "upstream-openbsd/lib/libc/include",
     ],
 
     name: "libc_openbsd",
+}
+
+cc_library_static {
+    name: "libc_openbsd_large_stack",
+    defaults: ["libc_defaults"],
+    srcs: [
+        "stdio/vfprintf.cpp",
+        "stdio/vfwprintf.cpp",
+        "upstream-openbsd/lib/libc/string/memmem.c",
+        "upstream-openbsd/lib/libc/string/strstr.c",
+    ],
+    cflags: [
+        "-include openbsd-compat.h",
+        "-Wno-sign-compare",
+        "-Wframe-larger-than=5000",
+    ],
+
+    local_include_dirs: [
+        "private",
+        "upstream-openbsd/android/include/",
+        "upstream-openbsd/lib/libc/gdtoa/",
+        "upstream-openbsd/lib/libc/include/",
+        "upstream-openbsd/lib/libc/stdio/",
+    ],
 }
 
 // ========================================================
@@ -880,9 +827,12 @@ cc_library_static {
         "bionic/dup.cpp",
         "bionic/environ.cpp",
         "bionic/error.cpp",
+        "bionic/ether_aton.c",
+        "bionic/ether_ntoa.c",
         "bionic/eventfd.cpp",
         "bionic/exec.cpp",
         "bionic/execinfo.cpp",
+        "bionic/exit.cpp",
         "bionic/faccessat.cpp",
         "bionic/fchmod.cpp",
         "bionic/fchmodat.cpp",
@@ -915,8 +865,10 @@ cc_library_static {
         "bionic/iconv.cpp",
         "bionic/icu_wrappers.cpp",
         "bionic/ifaddrs.cpp",
+        "bionic/initgroups.c",
         "bionic/inotify_init.cpp",
         "bionic/ioctl.cpp",
+        "bionic/isatty.c",
         "bionic/killpg.cpp",
         "bionic/langinfo.cpp",
         "bionic/lchown.cpp",
@@ -987,6 +939,8 @@ cc_library_static {
         "bionic/rename.cpp",
         "bionic/rmdir.cpp",
         "bionic/scandir.cpp",
+        "bionic/sched_cpualloc.c",
+        "bionic/sched_cpucount.c",
         "bionic/sched_getaffinity.cpp",
         "bionic/sched_getcpu.cpp",
         "bionic/semaphore.cpp",
@@ -1024,6 +978,7 @@ cc_library_static {
         "bionic/sys_time.cpp",
         "bionic/sysinfo.cpp",
         "bionic/syslog.cpp",
+        "bionic/sysprop_helpers.cpp",
         "bionic/system.cpp",
         "bionic/system_property_api.cpp",
         "bionic/system_property_set.cpp",
@@ -1046,6 +1001,16 @@ cc_library_static {
         "bionic/wctype.cpp",
         "bionic/wcwidth.cpp",
         "bionic/wmempcpy.cpp",
+
+        // Forked but not yet cleaned up/rewritten stdio code.
+        // TODO: finish cleanup.
+        "stdio/fmemopen.cpp",
+        "stdio/parsefloat.c",
+        "stdio/refill.c",
+        "stdio/stdio.cpp",
+        "stdio/stdio_ext.cpp",
+        "stdio/vfscanf.cpp",
+        "stdio/vfwscanf.cpp",
 
         // TODO: why isn't this in a static-libc-only module?
         // This contains a weak stub implementation of __find_icu_symbol for wctype.cpp,
@@ -1269,10 +1234,16 @@ cc_library_static {
         },
     },
 
-    // TODO: move to libc/bionic/legacy_32_bit_support.cpp or #if __LP64__ instead.
     multilib: {
         lib32: {
-            srcs: ["bionic/mmap.cpp"],
+            srcs: [
+                // off64_t/time64_t support on LP32.
+                "bionic/legacy_32_bit_support.cpp",
+                "bionic/time64.c",
+
+                // TODO: move to libc/bionic/legacy_32_bit_support.cpp or #if __LP64__ instead.
+                "bionic/mmap.cpp",
+            ],
         },
     },
 
@@ -1382,19 +1353,12 @@ cc_library_static {
 }
 
 // ========================================================
-// libc_common.a
+// libc_common.a --- everything shared by libc.a and libc.so
 // ========================================================
 
 cc_library_static {
     defaults: ["libc_defaults"],
     name: "libc_common",
-
-    srcs: libc_common_src_files,
-    multilib: {
-        lib32: {
-            srcs: libc_common_src_files_32,
-        },
-    },
 
     whole_static_libs: [
         "libarm-optimized-routines-string",
@@ -1410,7 +1374,6 @@ cc_library_static {
         "libc_netbsd",
         "libc_openbsd",
         "libc_openbsd_large_stack",
-        "libc_openbsd_ndk",
         "libc_syscalls",
         "libc_tzcode",
         "libstdc++",
@@ -1424,7 +1387,7 @@ cc_library_static {
 }
 
 // ========================================================
-// libc_static_dispatch.a
+// libc_static_dispatch.a --- libc.a ifuncs
 // ========================================================
 cc_library_static {
     defaults: ["libc_defaults"],
@@ -1450,7 +1413,7 @@ cc_library_static {
 }
 
 // ========================================================
-// libc_dynamic_dispatch.a
+// libc_dynamic_dispatch.a --- libc.so ifuncs
 // ========================================================
 cc_library_static {
     defaults: ["libc_defaults"],
@@ -1948,9 +1911,12 @@ cc_library_headers {
         "//external/gwp_asan",
         "//external/jemalloc_new",
         "//external/libunwind_llvm",
+        "//external/llvm-libc",
         "//external/scudo",
+        "//external/llvm-libc",
         "//system/core/property_service/libpropertyinfoparser",
         "//system/extras/toolchain-extras",
+
     ],
 
     stl: "none",
