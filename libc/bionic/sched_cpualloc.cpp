@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,24 +26,13 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#include <sched.h>
+#include <stdlib.h>
 
-#include <android/set_abort_message.h>
-#include <stddef.h>
-#include <sys/cdefs.h>
+cpu_set_t* __sched_cpualloc(size_t count) {
+  return static_cast<cpu_set_t*>(malloc(CPU_ALLOC_SIZE(count)));
+}
 
-struct crash_detail_t {
-  const char* name;
-  size_t name_size;
-  const char* data;
-  size_t data_size;
-  crash_detail_t* prev_free;
-};
-
-constexpr auto kNumCrashDetails = 128;
-
-struct crash_detail_page_t {
-  struct crash_detail_page_t* prev;
-  size_t used;
-  struct crash_detail_t crash_details[kNumCrashDetails];
-};
+void __sched_cpufree(cpu_set_t* set) {
+  free(set);
+}
