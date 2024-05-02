@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,41 +26,49 @@
  * SUCH DAMAGE.
  */
 
-#include <platform/bionic/tls_defines.h>
-#include <private/bionic_asm.h>
-#include <asm/signal.h>
-#include <linux/sched.h>
+// LLD tries not to generate a PT_TLS segment where (p_vaddr % p_align) is
+// non-zero. It can still do so if the p_align values are greater than a page.
 
-ENTRY(vfork)
-  // t0 = __get_tls()[TLS_SLOT_THREAD_ID]
-  mv      t0, tp
-  ld      t0, TLS_SLOT_THREAD_ID * 8(t0)
+#include <stdint.h>
+#include <unistd.h>
 
-  // Set cached_pid_ to 0, vforked_ to 1, and stash the previous value.
-  li      t1, 0x80000000
-  lw      t2, 20(t0)
-  sw      t1, 20(t0)
+#include "CHECK.h"
 
-  li      a0, (CLONE_VM | CLONE_VFORK | SIGCHLD)
-  li      a1, 0 //uses a duplicate of the parent's stack
-  li      a2, 0
-  li      a3, 0
-  li      a4, 0
+struct SmallVar {
+  int field;
+  char buffer[0x100 - sizeof(int)];
+};
 
-  li      a7, __NR_clone
-  ecall
+struct AlignedVar {
+  int field;
+  char buffer[0x20000 - sizeof(int)];
+} __attribute__((aligned(0x20000)));
 
-  // if (rc == 0) we're the child, and finished...
-  beqz    a0, L(success)
+__thread struct SmallVar var1 = {13};
+__thread struct SmallVar var2 = {17};
+__thread struct AlignedVar var3;
+__thread struct AlignedVar var4;
 
-  // else if (rc != 0): reset cached_pid_ and vforked_...
-  sw      t2, 20(t0)
-  // ...and work out whether we succeeded or failed.
-  bltz    a0, L(failure)
-L(success):
-  ret
+static uintptr_t var_addr(void* value) {
+  // Maybe the optimizer would assume that the variable has the alignment it is
+  // declared with.
+  asm volatile("" : "+r,m"(value) : : "memory");
+  return reinterpret_cast<uintptr_t>(value);
+}
 
-L(failure):
-  neg     a0, a0
-  tail    __set_errno_internal
-END(vfork)
+int main() {
+  // Bionic only allocates ELF TLS blocks with up to page alignment.
+  CHECK((var_addr(&var3) & (getpagesize() - 1)) == 0);
+  CHECK((var_addr(&var4) & (getpagesize() - 1)) == 0);
+
+  // TODO: These TLS accesses are broken with the current version of LLD. See
+  // https://github.com/llvm/llvm-project/issues/84743.
+#if !defined(__riscv)
+  CHECK(var1.field == 13);
+  CHECK(var2.field == 17);
+#endif
+
+  CHECK(var3.field == 0);
+  CHECK(var4.field == 0);
+  return 0;
+}
