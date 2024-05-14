@@ -75,7 +75,7 @@ const MallocDispatch* g_dispatch;
 size_t g_min_alloc_to_record = 0;
 size_t g_max_alloc_to_record = SIZE_MAX;
 
-static __always_inline uint64_t Nanotime() {
+static inline __always_inline uint64_t Nanotime() {
   struct timespec t = {};
   clock_gettime(CLOCK_MONOTONIC, &t);
   return static_cast<uint64_t>(t.tv_sec) * 1000000000LL + t.tv_nsec;
