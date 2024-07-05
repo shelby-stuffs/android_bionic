@@ -231,6 +231,7 @@ filegroup {
     name: "linker_sources_riscv64",
     srcs: [
         "arch/riscv64/begin.S",
+        "arch/riscv64/tlsdesc_resolver.S",
     ],
 }
 
@@ -367,7 +368,9 @@ cc_defaults {
         "liblinker_main",
         "liblinker_malloc",
 
-        "libc++_static",
+        // Use a version of libc++ built without exceptions, because accessing EH globals uses
+        // ELF TLS, which is not supported in the loader.
+        "libc++_static_noexcept",
         "libc_nomalloc",
         "libc_dynamic_dispatch",
         "libm",
@@ -434,7 +437,7 @@ cc_binary {
                 "linker_debuggerd_android.cpp",
             ],
             static_libs: [
-                "libc++demangle",
+                "libc++demangle_noexcept",
                 "libdebuggerd_handler_fallback",
             ],
         },
